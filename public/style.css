@@ -1,0 +1,81 @@
+body{
+    color:white;
+    width:50%;
+    margin:0 0 0 50%;
+    margin-top:10%;
+    transform:translate(-50%, 0);
+    background-color:rgba(13,43,54, 0.9);
+}
+
+.vulnerability_scanner{
+    margin-bottom:10px;
+    font-size:45px;
+    font-weight:900;
+    text-align:center;
+
+    width:content-fit;
+}
+.description{
+    font-size:23px;
+    text-align:center;
+
+}
+form{
+    margin-top:10px;
+    font-size:25px;
+    width:50%;
+    margin:0 auto;
+
+}
+label{
+    text-align:center;
+    display:block;
+    font-size:50px;
+    margin:0 auto;
+}
+.submit{
+    margin:0 auto;
+    margin-top:10px;
+    display:block;
+
+    width:180px;
+    height:45px;
+    cursor: pointer;
+    font-size:30px;
+    background-color:green;
+    color:white;
+}
+.submit:active{
+    box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+}
+input[name='citeName']{
+    width:300px;
+    height:30px;
+}
+.protected_or_not{
+    font-size:20px;
+}
+.recommendations p{
+    font-size:20px;
+}
+.invisible{
+    opacity:0;
+    visibility:hidden;
+}
+.visible{
+    font-size:30px;
+    opacity:1;
+    visibility:visible;
+    margin:0 auto;
+}
+.center{
+    text-align:center;
+}
+.info{
+
+    margin:0 auto;
+}
+.waiting{
+    font-size:30px;
+    text-align:center;
+}

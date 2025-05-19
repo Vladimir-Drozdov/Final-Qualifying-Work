@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div class="vulnerability_scanner">Vulnerability Scanner</div>
+    <div class="description">Приложение сканирует веб-приложение и проверяет, есть ли на нем уязвимости. Устранение уязвимостей поднимет безопасность сайта и предотвратит от мошенничества, кражи данных пользователей и взломов аккаунтов</div>
+    <form action="/" method="POST">
+        <label>
+            Введите url сайта:
+            <input type="text" name="citeName"/>
+        </label>
+
+        <input class="submit" type="submit"/>
+    </form>
+    <div class="waiting"></div>
+    <div class="info">
+        <div class="invisible">Риски: </div>
+        <div class="protected_or_not"></div>
+        <div class="invisible">Рекомендации: </div>
+        <div class="recommendations"></div>
+    </div>
+    <script>
+        const form=document.forms[0];
+        form.addEventListener("submit", (e)=>{
+            e.preventDefault();
+            const waiting=document.querySelector('.waiting');
+            waiting.innerText="Подождите, анализ сайта займет немного времени";
+            const invisible=document.querySelectorAll('.invisible');
+            invisible[0].classList.remove("visible");
+            invisible[1].classList.remove("visible");
+            const input=form.elements.citeName.value;
+            const protected_or_not=document.querySelector('.protected_or_not');
+            const recommendations=document.querySelector('.recommendations');
+            protected_or_not.innerText='';
+            recommendations.innerText='';
+            async function GetInfo(url) {
+                const response = await fetch("/", {
+                    method: "POST",
+                    headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        name: url
+                    })
+                });
+                if (response.ok === true) {
+                    const allCiteInfo = await response.json();
+                    waiting.innerText="";
+                    const citeInfo=allCiteInfo[0]//массив форм с xss
+                    const citeSQLInjectionInfo=allCiteInfo[1]//массив форм с sql
+                   
+                    let sql_protected=true;
+                    for (let i=0; i<citeSQLInjectionInfo.length; i++){
+                        if(citeSQLInjectionInfo[i][1].length!==0){
+                            sql_protected=false;
+                            break;
+                        }
+                    }
+                    let xss_protected=true;
+                    for (let i=0; i<citeInfo.length; i++){
+                        if(citeInfo[i]["is_vulnerable"]===true){
+                            xss_protected=false;
+                            break;
+                        }
+                    }
+                    if (xss_protected && sql_protected){
+                        protected_or_not.classList.add('center');
+                        protected_or_not.innerText="Ваш сайт защищен";
+                        invisible[0].classList.remove("visible");
+                        invisible[1].classList.remove("visible");
+                    }
+                    csp_presence=true;
+                    csp_is_right=true;
+                    //Проверка на XSS
+                    protected_or_not.classList.remove('center');
+                    invisible[0].classList.add("visible");
+                    invisible[1].classList.add("visible");
+                    if(citeInfo[citeInfo.length-1].innerHTML==1){
+                        recommendation_string=document.createElement('p');
+                        recommendation_string.innerText+="Замените innerHTML на innerText";
+                        recommendations.appendChild(recommendation_string)
+                    }
+                    if(citeInfo[citeInfo.length-1].csrfToken==0){
+                        recommendation_string=document.createElement('p');
+                        recommendation_string.innerText+="Используйте csrf-токен";
+                        recommendations.appendChild(recommendation_string)
+                    }
+                    if(citeInfo[citeInfo.length-1].DomPurify==0){
+                        recommendation_string=document.createElement('p');
+                        recommendation_string.innerText+="Используйте DOMPurify";
+                        recommendations.appendChild(recommendation_string)
+                    }
+                    
+
+                    protected_or_not.innerText="Ваш сайт не защищен";
+                    for (let i=0; i<citeInfo.length-1; i++){
+                        
+                        
+                        if(citeInfo[i]["is_vulnerable"]===true){ 
+                            let names=[]
+                            for (let j=0; j<citeInfo[i]["form_details"]["inputs"].length; j++){
+                                names.push(citeInfo[i]["form_details"]["inputs"][j].name)
+                            }
+                            names_string=names.join(", ")
+                            let protected_or_not_string=document.createElement('p');
+                            protected_or_not_string.innerText+=`Форма с action ${citeInfo[i].form_details.action==="" ? "/" : citeInfo[i].form_details.action}, методом ${citeInfo[i].form_details.method} и полями ${names_string} может быть подвержена атаке XSS`;
+                            protected_or_not.appendChild(protected_or_not_string)
+                        }
+                        if(citeInfo[i]["csp_presence"]===false){ 
+                            let names=[]
+                            for (let j=0; j<citeInfo[i]["form_details"]["inputs"].length; j++){
+                                names.push(citeInfo[i]["form_details"]["inputs"][j].name)
+                            }
+                            names_string=names.join(", ")
+                            let protected_or_not_string=document.createElement('p');
+                            protected_or_not_string.innerText+=`Форме с action ${citeInfo[i].form_details.action==="" ? "/" : citeInfo[i].form_details.action}, методами ${citeInfo[i].form_details.method} и полями ${names_string} можно установить Content Security Policy`;
+                            protected_or_not.appendChild(protected_or_not_string)
+                        }
+                        if(citeInfo[i]["csp_presence"]===true && citeInfo[i]["csp_is_right"]===0){ 
+                            let names=[]
+                            for (let j=0; j<citeInfo[i]["form_details"]["inputs"].length; j++){
+                                names.push(citeInfo[i]["form_details"]["inputs"][j].name)
+                            }
+                            names_string=names.join(", ")
+                            let protected_or_not_string=document.createElement('p');
+                            protected_or_not_string.innerText+=`У формы с action ${citeInfo[i].form_details.action==="" ? "/" : citeInfo[i].form_details.action}, методами ${citeInfo[i].form_details.method} и полями ${names_string} может быть неправильно установлен Content Security Policy`;
+                            protected_or_not.appendChild(protected_or_not_string)
+                            let recomendation_string=document.createElement('p');
+                            recomendation_string.innerText+="Проверьте CSP: нет ли unsafe-inline, unsafe-eval, HTTP-ссылок, * (звёздочек) и других символов, которые ослабляют защиту";
+                            recommendations.appendChild(recomendation_string)
+                        }
+                    }
+                    if(xss_protected===false){
+                      
+                        let recomendation_string=document.createElement('p');
+                        recomendation_string.innerText+="Попробуйте использовать валидацию и экранирование входных данных для защиты от XSS. XSS (Cross-Site Scripting) — это класс атак на веб-приложения, при котором злоумышленник внедряет вредоносный скрипт (чаще всего JavaScript) в веб-страницу.";
+                        recommendations.appendChild(recomendation_string)
+                    }
+                                         
+                    
+                    for (let j=0; j<=citeSQLInjectionInfo.length-1; j++){
+                        names=[]
+                        if(citeSQLInjectionInfo[j][1].length===0){
+                            continue;
+                        }
+                        for (let i=0; i<citeSQLInjectionInfo[j][0]["inputs"].length; i++){
+                            names.push(citeSQLInjectionInfo[j][0]["inputs"][i]["name"])
+                        }
+                        names_string=names.join(" ")
+                        protected_or_not_string=document.createElement('p');
+                        protected_or_not_string.innerText+=`Форма с action ${citeSQLInjectionInfo[j][0].action==="" ? "/" : citeSQLInjectionInfo[j][0].action} и методом ${citeSQLInjectionInfo[j][0].method} и полями ${names_string} может быть подвержена атаке SQL Injection`;
+                        protected_or_not.appendChild(protected_or_not_string)
+                        
+                        invisible[0].classList.add("visible");
+                        invisible[1].classList.add("visible");
+                    }
+                    if(sql_protected===false){
+                        recommendation_string=document.createElement('p');
+                        recommendation_string.innerText+="Попробуйте использовать prepared statements, обработку результатов (например, функцией mysqli_real_escape_string) либо фильтрацию входных значений по списку для защиты от SQL Injection. SQL-инъекция - это тип атаки, при которой злоумышленник вставляет вредоносный SQL-запрос в веб-приложение, добавляя его к входным параметрам.";
+                        recommendations.appendChild(recommendation_string)
+                    }
+                }
+            }
+            GetInfo(input)
+        })
+        
+    </script>
+
+</body>
+
+</html>
